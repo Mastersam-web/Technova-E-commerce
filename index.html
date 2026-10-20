@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechNova - Votre univers technologique</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        technova: {
+                            DEFAULT: '#0e5a47',
+                            dark: '#0a4335',
+                            accent: '#12735b',
+                            light: '#e8f3f0',
+                            mint: '#d0e7e1',
+                            badge: '#0e5a47'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8faf9;
+            color: #1a202c;
+        }
+        /* Custom smooth transition for tab pages */
+        .page-view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .page-view.active {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-[#f8faf9] text-gray-800 antialiased selection:bg-technova selection:text-white flex flex-col min-h-screen">
+
+    <!-- Notification Toast Message Box -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-technova text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3">
+        <i class="fa-solid fa-circle-check text-emerald-300 text-xl"></i>
+        <span id="toast-message" class="font-medium text-sm">Action réalisée avec succès !</span>
+    </div>
+
+    <!-- Slide-over Shopping Cart Drawer -->
+    <div id="cart-drawer-overlay" onclick="toggleCartDrawer(false)" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden transition-opacity"></div>
+    <aside id="cart-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-technova text-white">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-bag-shopping text-xl"></i>
+                <h3 class="font-bold text-lg">Votre Panier (<span id="cart-drawer-count">0</span>)</h3>
+            </div>
+            <button onclick="toggleCartDrawer(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cart-items-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Dynamic Cart Items will be rendered here -->
+        </div>
+
+        <!-- Cart Footer / Total -->
+        <div class="p-6 border-t border-gray-100 bg-gray-50 space-y-4">
+            <div class="flex justify-between items-center text-sm font-medium text-gray-600">
+                <span>Sous-total</span>
+                <span id="cart-subtotal" class="text-base font-bold text-gray-900">0,00 DA</span>
+            </div>
+            <div class="flex justify-between items-center text-sm font-medium text-gray-600">
+                <span>Livraison</span>
+                <span class="text-emerald-700 font-bold">Gratuite</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3 flex justify-between items-center">
+                <span class="text-base font-bold text-gray-900">Total TTC</span>
+                <span id="cart-total" class="text-xl font-extrabold text-technova">0,00 DA</span>
+            </div>
+            <button onclick="checkout()" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold shadow-md transition flex items-center justify-center space-x-2">
+                <span>Passer la commande</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Modal Connexion / Inscription -->
+    <div id="auth-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="auth-title" class="text-xl font-bold text-gray-900">Connexion</h3>
+                <button type="button" onclick="closeAuthModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="auth-tabs" class="flex bg-gray-100 rounded-full p-1 text-xs font-bold">
+                <button type="button" id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2 rounded-full transition bg-technova text-white">Connexion</button>
+                <button type="button" id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2 rounded-full transition text-gray-600">Créer un compte</button>
+            </div>
+            <p id="auth-hint" class="hidden text-xs text-technova bg-emerald-50 rounded-xl px-3 py-2 font-medium">Connectez-vous ou créez un compte pour finaliser votre commande.</p>
+
+            <form id="login-form" onsubmit="submitLogin(event)" class="space-y-4">
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse e-mail</label><input type="email" name="email" required maxlength="190" autocomplete="email" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Mot de passe</label><input type="password" name="password" required autocomplete="current-password" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Se connecter</button>
+                <button type="button" onclick="switchAuthTab('forgot')" class="block mx-auto text-xs text-technova font-semibold hover:underline">Mot de passe oublié ?</button>
+            </form>
+
+            <form id="register-form" onsubmit="submitRegister(event)" class="hidden space-y-4">
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nom complet</label><input type="text" name="name" required maxlength="120" autocomplete="name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse e-mail</label><input type="email" name="email" required maxlength="190" autocomplete="email" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Téléphone</label><input type="tel" name="phone" maxlength="30" autocomplete="tel" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Mot de passe (8 caractères min.)</label><input type="password" name="password" required minlength="8" autocomplete="new-password" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Créer mon compte</button>
+            </form>
+
+            <form id="forgot-form" onsubmit="submitForgot(event)" class="hidden space-y-4">
+                <p class="text-sm text-gray-600">Saisissez votre e-mail : nous vous enverrons un lien pour choisir un nouveau mot de passe.</p>
+                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse e-mail</label><input type="email" name="email" required maxlength="190" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Envoyer le lien</button>
+                <button type="button" onclick="switchAuthTab('login')" class="block mx-auto text-xs text-technova font-semibold hover:underline">Retour à la connexion</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Checkout modal (coordonnées de livraison envoyées au backend) -->
+    <div id="checkout-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 p-4">
+        <form id="checkout-form" onsubmit="submitOrder(event)" class="bg-white rounded-3xl p-8 w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-gray-900">Finaliser la commande</h3>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nom complet</label>
+                <input type="text" name="name" required maxlength="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Téléphone</label>
+                <input type="tel" name="phone" required maxlength="30" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse de livraison</label>
+                <input type="text" name="address" required maxlength="255" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Ville</label>
+                <input type="text" name="city" maxlength="100" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button type="button" onclick="closeCheckoutModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm transition">Annuler</button>
+                <button type="submit" id="checkout-submit" class="flex-1 bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Confirmer</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Top Header Navigation -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Logo -->
+            <a href="javascript:void(0)" onclick="navigateTo('home')" class="flex items-center space-x-2.5 group">
+                <div class="w-10 h-10 rounded-xl bg-technova flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-bag-shopping text-lg"></i>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tight text-gray-900">Tech<span class="text-technova">Nova</span></span>
+            </a>
+
+            <!-- Navigation Links (SPA Tab Triggers) -->
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-600">
+                <button onclick="navigateTo('home')" id="nav-home" class="nav-btn text-technova font-bold transition-colors">Accueil</button>
+                <button onclick="navigateTo('boutique')" id="nav-boutique" class="nav-btn hover:text-technova transition-colors">Boutique</button>
+                
+                <div class="relative group cursor-pointer py-2">
+                    <button onclick="navigateTo('boutique')" class="flex items-center space-x-1.5 hover:text-technova transition-colors font-medium">
+                        <span>Catégories</span>
+                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                    </button>
+                    <!-- Dropdown menu -->
+                    <div class="absolute top-full left-0 w-52 bg-white shadow-xl rounded-2xl py-2 hidden group-hover:block border border-gray-100 animate-fadeIn z-50">
+                        <button onclick="filterBoutiqueCategory('Smartphones')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Smartphones</button>
+                        <button onclick="filterBoutiqueCategory('Ordinateurs')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Ordinateurs</button>
+                        <button onclick="filterBoutiqueCategory('Audio')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Audio</button>
+                        <button onclick="filterBoutiqueCategory('Montres connectées')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Montres connectées</button>
+                        <button onclick="filterBoutiqueCategory('Gaming')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Gaming</button>
+                        <button onclick="filterBoutiqueCategory('Accessoires')" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 hover:text-technova font-medium text-sm">Accessoires</button>
+                    </div>
+                </div>
+
+                <button onclick="navigateTo('apropos')" id="nav-apropos" class="nav-btn hover:text-technova transition-colors">À propos</button>
+                <button onclick="navigateTo('contact')" id="nav-contact" class="nav-btn hover:text-technova transition-colors">Contact</button>
+            </nav>
+
+            <!-- Search & Actions -->
+            <div class="flex items-center space-x-4">
+                <!-- Search Bar -->
+                <div class="hidden lg:flex items-center bg-gray-100 px-4 py-2 rounded-full w-60 border border-transparent focus-within:border-technova focus-within:bg-white transition-all">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm mr-2"></i>
+                    <input type="text" id="search-input" onkeyup="handleGlobalSearch(event)" placeholder="Rechercher un produit..." class="bg-transparent border-none outline-none text-sm w-full text-gray-700 placeholder-gray-400">
+                </div>
+
+                <!-- User Account -->
+                <button onclick="openAccount()" id="account-btn" title="Mon compte" class="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors">
+                    <i class="fa-regular fa-user text-sm"></i>
+                    <span id="account-dot" class="hidden absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+                </button>
+
+                <!-- Cart Counter Trigger -->
+                <button onclick="toggleCartDrawer(true)" class="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors">
+                    <i class="fa-solid fa-bag-shopping text-sm"></i>
+                    <span id="header-cart-badge" class="absolute -top-1 -right-1 bg-technova text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md">0</span>
+                </button>
+
+                <!-- Mobile menu button -->
+                <button id="menu-btn" onclick="toggleMobileMenu()" class="md:hidden text-gray-700 focus:outline-none p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu Drawer -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-gray-100 px-6 py-4 space-y-3">
+            <button onclick="navigateTo('home'); toggleMobileMenu();" class="block w-full text-left font-semibold text-technova py-1">Accueil</button>
+            <button onclick="navigateTo('boutique'); toggleMobileMenu();" class="block w-full text-left text-gray-700 py-1">Boutique</button>
+            <button onclick="navigateTo('apropos'); toggleMobileMenu();" class="block w-full text-left text-gray-700 py-1">À propos</button>
+            <button onclick="navigateTo('contact'); toggleMobileMenu();" class="block w-full text-left text-gray-700 py-1">Contact</button>
+        </div>
+    </header>
+
+    <!-- PAGE VIEW 1: ACCUEIL (HOME) -->
+    <div id="page-home" class="page-view active flex-1">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+            <!-- Hero Banner Section -->
+            <section class="relative bg-gradient-to-br from-emerald-50/80 via-[#f0f7f4] to-white rounded-3xl p-8 md:p-14 overflow-hidden shadow-sm border border-emerald-100/50">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Left Text Content -->
+                    <div class="lg:col-span-7 space-y-6 z-10">
+                        <div class="inline-flex items-center space-x-2 bg-emerald-100 text-technova px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide">
+                            <i class="fa-solid fa-sparkles text-emerald-600"></i>
+                            <span>Nouveauté</span>
+                        </div>
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-[1.1]">
+                            La technologie <br><span class="text-technova">à portée de main</span>
+                        </h1>
+                        <p class="text-gray-600 text-base sm:text-lg max-w-lg font-normal leading-relaxed">
+                            Découvrez les derniers smartphones, ordinateurs et accessoires avec une qualité exceptionnelle et des prix imbattables.
+                        </p>
+                        <div class="pt-2">
+                            <button onclick="navigateTo('boutique')" class="inline-flex items-center space-x-3 bg-technova hover:bg-technova-dark text-white px-8 py-4 rounded-full font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                <span>Découvrir la collection</span>
+                                <i class="fa-solid fa-arrow-right text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Hero Image Showcase -->
+                    <div class="lg:col-span-5 relative flex justify-center items-center">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-emerald-200/40 to-transparent rounded-full filter blur-3xl -z-10"></div>
+                        <div class="relative w-full rounded-3xl overflow-hidden shadow-2xl border border-white/80 group">
+                            <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1000&q=80" alt="TechNova Showcase Devices" class="w-full h-80 sm:h-96 object-cover object-center group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                            <div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-3.5 rounded-2xl border border-white/50 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-xl bg-technova flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-xs font-bold text-gray-900">Écosystème Numérique</h5>
+                                        <p class="text-[11px] text-gray-500">Garantie constructeur 2 ans</p>
+                                    </div>
+                                </div>
+                                <span class="bg-emerald-100 text-technova text-xs font-bold px-2.5 py-1 rounded-full">Premium</span>
+                            </div>
+                        </div>
+
+                        <!-- Slider controls arrows -->
+                        <button onclick="showToast('Modèle d\'exposition suivant')" class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 shadow-lg rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button onclick="showToast('Modèle d\'exposition suivant')" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 shadow-lg rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hero Features Bar -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-emerald-100/80">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-technova text-xl">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Livraison rapide</h4>
+                            <p class="text-gray-500 text-xs">en 24/48h partout</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-technova text-xl">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Paiement sécurisé</h4>
+                            <p class="text-gray-500 text-xs">100% fiable & vérifié</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-technova text-xl">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Service client</h4>
+                            <p class="text-gray-500 text-xs">dédié 7j/7</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dots -->
+                <div class="flex justify-center space-x-2 mt-6">
+                    <span class="w-6 h-2 bg-technova rounded-full"></span>
+                    <span class="w-2 h-2 bg-emerald-300 rounded-full"></span>
+                    <span class="w-2 h-2 bg-emerald-300 rounded-full"></span>
+                </div>
+            </section>
+
+            <!-- Categories Section -->
+            <section id="categories" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-technova font-bold text-xs uppercase tracking-wider block mb-1">— Nos catégories</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Parcourir par catégorie</h2>
+                    </div>
+                    <button onclick="navigateTo('boutique')" class="text-technova font-bold text-sm hover:underline flex items-center space-x-1">
+                        <span>Voir toutes les catégories</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Categories Grid with High-Quality Images -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
+                    <!-- Smartphones -->
+                    <div onclick="filterBoutiqueCategory('Smartphones')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=300&q=80" alt="Smartphones" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Smartphones</span>
+                    </div>
+                    <!-- Ordinateurs -->
+                    <div onclick="filterBoutiqueCategory('Ordinateurs')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=300&q=80" alt="Ordinateurs" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Ordinateurs</span>
+                    </div>
+                    <!-- Audio -->
+                    <div onclick="filterBoutiqueCategory('Audio')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=300&q=80" alt="Audio" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Audio</span>
+                    </div>
+                    <!-- Montres connectées -->
+                    <div onclick="filterBoutiqueCategory('Montres connectées')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&q=80" alt="Montres connectées" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Montres connectées</span>
+                    </div>
+                    <!-- Gaming -->
+                    <div onclick="filterBoutiqueCategory('Gaming')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1600080972464-8e5f35f63d08?auto=format&fit=crop&w=300&q=80" alt="Gaming" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Gaming</span>
+                    </div>
+                    <!-- Accessoires -->
+                    <div onclick="filterBoutiqueCategory('Accessoires')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                        <div class="w-full h-24 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <img src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=300&q=80" alt="Accessoires" class="w-full h-full object-cover rounded-lg">
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm group-hover:text-technova transition-colors">Accessoires</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Best Sellers Section -->
+            <section id="bestsellers" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-technova font-bold text-xs uppercase tracking-wider block mb-1">— Produits phares</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Les meilleures ventes</h2>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="showToast('Défilement gauche')" class="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition">
+                            <i class="fa-solid fa-chevron-left text-sm text-gray-700"></i>
+                        </button>
+                        <button onclick="showToast('Défilement droit')" class="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition">
+                            <i class="fa-solid fa-chevron-right text-sm text-gray-700"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Featured Products Grid -->
+                <div id="home-featured-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Dynamic rendering via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Promotional Banner Section -->
+            <section class="bg-gradient-to-r from-emerald-50 via-[#f0f7f4] to-emerald-100/60 rounded-3xl p-8 md:p-12 border border-emerald-100 relative overflow-hidden shadow-sm">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-6 space-y-4 z-10">
+                        <span class="bg-white text-technova text-xs font-extrabold px-3.5 py-1.5 rounded-full inline-block shadow-sm">Offre spéciale</span>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+                            Jusqu'à -20% <br>sur une sélection de produits
+                        </h2>
+                        <p class="text-gray-600 text-sm sm:text-base">
+                            Équipez-vous avec les meilleures marques du marché et profitez de nos offres à durée limitée !
+                        </p>
+                        <div class="pt-2">
+                            <button onclick="navigateTo('boutique')" class="bg-technova hover:bg-technova-dark text-white px-7 py-3.5 rounded-full font-semibold text-sm transition shadow-md flex items-center space-x-2">
+                                <span>Voir l'offre</span>
+                                <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-6 flex justify-center">
+                        <div class="relative w-full rounded-2xl overflow-hidden shadow-xl border border-white">
+                            <img src="https://images.unsplash.com/photo-1468495244123-6c6c332eeece?auto=format&fit=crop&w=800&q=80" alt="Promo Pack Tech" class="w-full h-64 sm:h-80 object-cover">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Guarantees Bar -->
+            <section class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Produits originaux</h4>
+                            <p class="text-gray-500 text-xs">Garantie constructeur</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Livraison rapide</h4>
+                            <p class="text-gray-500 text-xs">Partout au Maroc</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Paiement sécurisé</h4>
+                            <p class="text-gray-500 text-xs">100% fiable</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">Support client</h4>
+                            <p class="text-gray-500 text-xs">Toujours à votre écoute</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PAGE VIEW 2: BOUTIQUE / CATALOG -->
+    <div id="page-boutique" class="page-view flex-1">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <div class="bg-gradient-to-r from-technova to-technova-dark rounded-3xl p-8 text-white shadow-md">
+                <h1 class="text-3xl sm:text-4xl font-extrabold mb-2">Notre Boutique Tech</h1>
+                <p class="text-emerald-100 text-sm sm:text-base max-w-2xl">Découvrez l'intégralité de nos équipements électroniques certifiés d'origine au meilleur prix.</p>
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="flex flex-wrap gap-2 pt-2 border-b border-gray-200 pb-4">
+                <button onclick="filterBoutiqueCategory('Tous')" id="cat-btn-Tous" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-technova text-white shadow-sm">Tous les produits</button>
+                <button onclick="filterBoutiqueCategory('Smartphones')" id="cat-btn-Smartphones" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Smartphones</button>
+                <button onclick="filterBoutiqueCategory('Ordinateurs')" id="cat-btn-Ordinateurs" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Ordinateurs</button>
+                <button onclick="filterBoutiqueCategory('Audio')" id="cat-btn-Audio" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Audio</button>
+                <button onclick="filterBoutiqueCategory('Montres connectées')" id="cat-btn-Montres connectées" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Montres connectées</button>
+                <button onclick="filterBoutiqueCategory('Gaming')" id="cat-btn-Gaming" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Gaming</button>
+                <button onclick="filterBoutiqueCategory('Accessoires')" id="cat-btn-Accessoires" class="cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">Accessoires</button>
+            </div>
+
+            <!-- Full Boutique Products Grid -->
+            <div id="boutique-products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- PAGE VIEW 3: À PROPOS -->
+    <div id="page-apropos" class="page-view flex-1">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+            <!-- Hero Header -->
+            <div class="relative bg-gradient-to-br from-technova via-technova-dark to-[#062c23] rounded-3xl p-8 sm:p-14 text-white overflow-hidden shadow-lg">
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <span class="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-xs font-extrabold px-3.5 py-1.5 rounded-full inline-block">Notre Histoire</span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">Innover pour connecter votre monde</h1>
+                    <p class="text-emerald-100/90 text-sm sm:text-base leading-relaxed">
+                        Depuis 2020, TechNova s'impose comme le leader de la distribution de produits high-tech certifiés. Nous sélectionnons rigoureusement les innovations majeures du marché.
+                    </p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-15 text-white">
+                    <i class="fa-solid fa-microchip text-[260px]"></i>
+                </div>
+            </div>
+
+            <!-- Core Values -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">Qualité Absolue</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Tous nos produits proviennent directement des constructeurs officiels avec garantie intégrale de 2 ans.</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">Rapidité & Fiabilité</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Notre réseau logistique réactif garantit des expéditions express sécurisées à votre domicile.</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">Support Dédié</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Une équipe d'experts technologiques à votre écoute 7 jours sur 7 pour vous conseiller avant et après votre achat.</p>
+                </div>
+            </div>
+
+            <!-- Team Presentation -->
+            <div class="space-y-6">
+                <div class="text-center max-w-xl mx-auto">
+                    <span class="text-technova font-bold text-xs uppercase tracking-wider">L'Équipe TechNova</span>
+                    <h2 class="text-3xl font-extrabold text-gray-900 mt-1">Des passionnés à votre service</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm text-center p-6 space-y-3">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Directrice Général" class="w-28 h-28 rounded-full object-cover mx-auto ring-4 ring-emerald-50">
+                        <h4 class="font-bold text-gray-900 text-lg">Yasmine Amrani</h4>
+                        <p class="text-technova font-medium text-xs">Fondatrice & CEO</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm text-center p-6 space-y-3">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80" alt="Responsable Produit" class="w-28 h-28 rounded-full object-cover mx-auto ring-4 ring-emerald-50">
+                        <h4 class="font-bold text-gray-900 text-lg">Karim Haddad</h4>
+                        <p class="text-technova font-medium text-xs">Directeur Produits High-Tech</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm text-center p-6 space-y-3">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80" alt="Support Client" class="w-28 h-28 rounded-full object-cover mx-auto ring-4 ring-emerald-50">
+                        <h4 class="font-bold text-gray-900 text-lg">Sonia Benali</h4>
+                        <p class="text-technova font-medium text-xs">Responsable Expérience Client</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- PAGE VIEW 4: CONTACT -->
+    <div id="page-contact" class="page-view flex-1">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="text-technova font-extrabold text-xs uppercase tracking-wider">— Contactez-nous</span>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Nous sommes à votre écoute</h1>
+                <p class="text-gray-600 text-sm">Une question sur un produit ou une commande ? Envoyez-nous un message.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Contact Info Cards -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Adresse du Showroom</h4>
+                            <p class="text-gray-600 text-sm mt-1">123 Boulevard de la Technologie, Casablanca, Maroc</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-envelope"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Adresse E-mail</h4>
+                            <p class="text-gray-600 text-sm mt-1">contact@technova.ma</p>
+                            <p class="text-gray-600 text-sm">support@technova.ma</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-technova flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-phone"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Téléphone</h4>
+                            <p class="text-gray-600 text-sm mt-1">+212 5 22 00 11 22</p>
+                            <p class="text-gray-400 text-xs mt-0.5">Du Lundi au Samedi: 09h00 - 19h00</p>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Map Card Mockup -->
+                    <div class="bg-emerald-900 text-white p-6 rounded-3xl shadow-md relative overflow-hidden h-48 flex flex-col justify-between">
+                        <div class="relative z-10">
+                            <span class="text-xs bg-emerald-700/60 px-3 py-1 rounded-full font-bold">Localisation</span>
+                            <h5 class="text-lg font-bold mt-2">Visitez notre Showroom</h5>
+                        </div>
+                        <div class="relative z-10 flex justify-between items-center text-xs text-emerald-200">
+                            <span>GPS: 33.5731° N, 7.5898° W</span>
+                            <span class="bg-white text-technova font-bold px-3 py-1 rounded-full">Ouvrir Maps</span>
+                        </div>
+                        <i class="fa-solid fa-map-location-dot absolute -right-4 -bottom-4 text-emerald-800 text-9xl opacity-40"></i>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <div class="lg:col-span-7 bg-white p-8 sm:p-10 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+                    <h3 class="text-2xl font-bold text-gray-900">Envoyez-nous un message</h3>
+                    <form id="contact-form" onsubmit="handleContactSubmit(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nom Complet</label>
+                                <input type="text" name="name" maxlength="120" required placeholder="Votre nom" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse E-mail</label>
+                                <input type="email" name="email" maxlength="190" required placeholder="votre@email.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Sujet de votre message</label>
+                            <input type="text" name="subject" maxlength="200" required placeholder="Ex: Renseignement produit" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Message</label>
+                            <textarea rows="5" name="message" maxlength="5000" required placeholder="Expliquez-nous votre demande en détail..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-4 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                            <span>Envoyer le message</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- PAGE VIEW 5: MON COMPTE (tableau de bord client) -->
+    <div id="page-compte" class="page-view flex-1">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <div class="bg-gradient-to-r from-technova to-technova-dark rounded-3xl p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <p class="text-emerald-200 text-xs font-bold uppercase tracking-wider">Mon espace client</p>
+                    <h1 id="dash-greeting" class="text-3xl sm:text-4xl font-extrabold mt-1">Bonjour</h1>
+                    <p id="dash-email" class="text-emerald-100 text-sm mt-1"></p>
+                </div>
+                <button onclick="navigateTo('boutique')" class="inline-flex items-center space-x-2 bg-white text-technova px-6 py-3 rounded-full font-bold text-sm hover:bg-emerald-50 transition self-start sm:self-auto">
+                    <span>Continuer mes achats</span><i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- Menu -->
+                <aside class="lg:col-span-3 bg-white rounded-3xl border border-gray-100 shadow-sm p-3 space-y-1">
+                    <button id="dash-tab-overview" onclick="showDashTab('overview')" class="dash-tab w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition"><i class="fa-solid fa-gauge-high w-5"></i><span>Aperçu</span></button>
+                    <button id="dash-tab-orders" onclick="showDashTab('orders')" class="dash-tab w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition"><i class="fa-solid fa-box w-5"></i><span>Mes commandes</span></button>
+                    <button id="dash-tab-profile" onclick="showDashTab('profile')" class="dash-tab w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition"><i class="fa-regular fa-user w-5"></i><span>Mon profil</span></button>
+                    <button id="dash-tab-security" onclick="showDashTab('security')" class="dash-tab w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition"><i class="fa-solid fa-lock w-5"></i><span>Mot de passe</span></button>
+                    <button onclick="doLogout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold text-red-600 hover:bg-red-50 transition"><i class="fa-solid fa-right-from-bracket w-5"></i><span>Se déconnecter</span></button>
+                </aside>
+
+                <!-- Contenu -->
+                <section class="lg:col-span-9 space-y-6">
+                    <div id="dash-overview" class="dash-panel space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"><p class="text-xs font-bold text-gray-500 uppercase">Commandes</p><p id="stat-orders" class="text-3xl font-extrabold text-technova mt-1">0</p></div>
+                            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"><p class="text-xs font-bold text-gray-500 uppercase">En cours</p><p id="stat-active" class="text-3xl font-extrabold text-technova mt-1">0</p></div>
+                            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"><p class="text-xs font-bold text-gray-500 uppercase">Total dépensé</p><p id="stat-spent" class="text-3xl font-extrabold text-technova mt-1">0,00 DA</p></div>
+                        </div>
+                        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+                            <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Dernière commande</h3>
+                                <button onclick="showDashTab('orders')" class="text-technova text-xs font-bold hover:underline">Tout voir</button></div>
+                            <div id="dash-last-order"></div>
+                        </div>
+                        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                            <h3 class="font-bold text-gray-900 mb-3">Mes coordonnées de livraison</h3>
+                            <div id="dash-address" class="text-sm text-gray-600 space-y-1"></div>
+                            <button onclick="showDashTab('profile')" class="mt-3 text-technova text-xs font-bold hover:underline">Modifier</button>
+                        </div>
+                    </div>
+
+                    <div id="dash-orders" class="dash-panel hidden space-y-4">
+                        <h3 class="text-xl font-bold text-gray-900">Mes commandes</h3>
+                        <div id="dash-orders-list" class="space-y-4"></div>
+                    </div>
+
+                    <div id="dash-profile" class="dash-panel hidden">
+                        <form id="profile-form" onsubmit="saveProfile(event)" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-4">
+                            <h3 class="text-xl font-bold text-gray-900">Mon profil</h3>
+                            <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nom complet</label><input type="text" name="name" required maxlength="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                            <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse e-mail</label><input type="email" name="email" disabled class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition opacity-60 cursor-not-allowed"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Téléphone</label><input type="tel" name="phone" maxlength="30" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                                <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Ville</label><input type="text" name="city" maxlength="100" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Adresse de livraison</label><input type="text" name="address" maxlength="255" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                            <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Enregistrer les modifications</button>
+                        </form>
+                    </div>
+
+                    <div id="dash-security" class="dash-panel hidden">
+                        <form id="password-form" onsubmit="savePassword(event)" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-4">
+                            <h3 class="text-xl font-bold text-gray-900">Changer mon mot de passe</h3>
+                            <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Mot de passe actuel</label><input type="password" name="currentPassword" required autocomplete="current-password" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                            <div><label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nouveau mot de passe (8 caractères min.)</label><input type="password" name="newPassword" required minlength="8" autocomplete="new-password" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-technova focus:bg-white transition"></div>
+                            <button type="submit" class="w-full bg-technova hover:bg-technova-dark text-white py-3.5 rounded-xl font-semibold text-sm shadow-md transition">Mettre à jour le mot de passe</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="bg-technova-dark text-gray-300 mt-auto pt-16 pb-12 border-t border-emerald-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-white/10">
+            
+            <!-- Column 1: Brand -->
+            <div class="space-y-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-technova font-bold shadow">
+                        <i class="fa-solid fa-bag-shopping text-lg"></i>
+                    </div>
+                    <span class="text-2xl font-bold tracking-tight text-white">Tech<span class="text-emerald-400">Nova</span></span>
+                </div>
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Votre univers technologique de référence. Retrouvez les innovations qui simplifient votre quotidien.
+                </p>
+            </div>
+
+            <!-- Column 2: Useful Links -->
+            <div class="space-y-4">
+                <h4 class="text-white font-bold text-sm tracking-wide">Liens utiles</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><button onclick="navigateTo('home')" class="hover:text-emerald-300 transition">Accueil</button></li>
+                    <li><button onclick="navigateTo('boutique')" class="hover:text-emerald-300 transition">Boutique</button></li>
+                    <li><button onclick="navigateTo('apropos')" class="hover:text-emerald-300 transition">À propos</button></li>
+                    <li><button onclick="navigateTo('contact')" class="hover:text-emerald-300 transition">Contact</button></li>
+                </ul>
+            </div>
+
+            <!-- Column 3: Socials -->
+            <div class="space-y-4">
+                <h4 class="text-white font-bold text-sm tracking-wide">Suivez-nous</h4>
+                <div class="flex space-x-3">
+                    <a href="javascript:void(0)" onclick="showToast('Réseau social Facebook')" class="w-10 h-10 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"><i class="fa-brands fa-facebook-f text-sm"></i></a>
+                    <a href="javascript:void(0)" onclick="showToast('Réseau social Instagram')" class="w-10 h-10 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"><i class="fa-brands fa-instagram text-sm"></i></a>
+                    <a href="javascript:void(0)" onclick="showToast('Chaîne Youtube')" class="w-10 h-10 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"><i class="fa-brands fa-youtube text-sm"></i></a>
+                    <a href="javascript:void(0)" onclick="showToast('Compte TikTok')" class="w-10 h-10 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"><i class="fa-brands fa-tiktok text-sm"></i></a>
+                </div>
+            </div>
+
+            <!-- Column 4: Newsletter -->
+            <div class="space-y-4">
+                <h4 class="text-white font-bold text-sm tracking-wide">Newsletter</h4>
+                <p class="text-xs text-gray-300">Recevez nos nouveautés et offres spéciales</p>
+                <form onsubmit="handleNewsletterSubmit(event)" class="flex items-center bg-white/10 rounded-full p-1 border border-white/20 focus-within:border-emerald-400 transition">
+                    <input type="email" name="email" maxlength="190" placeholder="Votre adresse e-mail" required class="bg-transparent border-none outline-none px-4 py-2 text-sm text-white placeholder-gray-400 w-full">
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white w-10 h-10 rounded-full flex items-center justify-center transition shrink-0">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Copyright -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400">
+            <p>&copy; 2026 TechNova. Tous droits réservés.</p>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <a href="javascript:void(0)" onclick="showToast('Conditions Générales')" class="hover:text-white transition">Conditions générales</a>
+                <a href="javascript:void(0)" onclick="showToast('Politique de confidentialité')" class="hover:text-white transition">Politique de confidentialité</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Produits chargés depuis le backend (api/products.php)
+        let products = [];
+
+        // Global State
+        let cart = [];
+        let activeBoutiqueFilter = 'Tous';
+        let customer = null;          // client connecté (null si visiteur)
+        let customerOrders = [];
+        let pendingCheckout = false;  // reprendre la commande après connexion
+
+        // Initialize App on DOM Load
+        window.onload = async function() {
+            updateCartUI();
+            loadSession().then(() => {
+                if (location.hash === '#connexion') {
+                    history.replaceState(null, '', location.pathname);
+                    if (customer) location.href = 'compte/'; else openAuthModal('login', false);
+                }
+            });
+            try {
+                const data = await apiFetch('api/products.php');
+                products = data.products || [];
+            } catch (e) {
+                showToast(e.message || 'Impossible de charger les produits.');
+            }
+            renderFeaturedProducts();
+            renderBoutiqueProducts();
+        };
+
+        // Appel API commun (JSON)
+        async function apiFetch(url, payload) {
+            const opts = payload === undefined
+                ? { headers: { 'Accept': 'application/json' } }
+                : { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) };
+            let res, data;
+            try {
+                res = await fetch(url, opts);
+                data = await res.json();
+            } catch (e) {
+                throw new Error('Connexion au serveur impossible.');
+            }
+            if (!res.ok || !data.ok) {
+                const err = new Error(data.message || 'Une erreur est survenue.');
+                err.code = data.code;
+                throw err;
+            }
+            return data;
+        }
+
+        // Navigation Controller (SPA Tabs)
+        function navigateTo(pageId) {
+            if (pageId === 'compte') {
+                if (!customer) { openAuthModal('login', false); return; }
+                location.href = 'compte/';
+                return;
+            }
+            document.querySelectorAll('.page-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            const target = document.getElementById(`page-${pageId}`);
+            if (target) {
+                target.classList.add('active');
+            }
+
+            // Update Nav styling
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-technova', 'font-bold');
+                btn.classList.add('hover:text-technova');
+            });
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            if (activeNav) {
+                activeNav.classList.add('text-technova', 'font-bold');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Render Product Card Component HTML
+        function createProductCardHTML(product) {
+            return `
+                <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group">
+                    ${product.discount ? `<span class="absolute top-6 left-6 bg-technova text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">${product.discount}</span>` : ''}
+                    <button onclick="showToast('Ajouté aux favoris')" class="absolute top-6 right-6 w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-red-500 transition z-10">
+                        <i class="fa-regular fa-heart"></i>
+                    </button>
+                    <div class="w-full h-48 bg-gray-50 rounded-xl mb-4 overflow-hidden flex items-center justify-center">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="space-y-2">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${product.category}</span>
+                        <h3 class="font-bold text-gray-900 text-base line-clamp-1">${product.name}</h3>
+                        <div class="flex items-center space-x-1 text-amber-400 text-xs">
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <span class="text-gray-500 ml-1 font-medium">(${product.reviews})</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 pt-1">
+                            <span class="text-lg font-extrabold text-gray-900">${product.price.toFixed(2).replace('.', ',')} DA</span>
+                            ${product.oldPrice ? `<span class="text-xs text-gray-400 line-through">${product.oldPrice.toFixed(2).replace('.', ',')} DA</span>` : ''}
+                        </div>
+                    </div>
+                    <button onclick="addToCart('${product.id}')" class="mt-4 w-full bg-technova hover:bg-technova-dark text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 transition shadow-sm">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        <span>Ajouter au panier</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        // Render Home Page Featured Products
+        function renderFeaturedProducts() {
+            const container = document.getElementById('home-featured-products');
+            const featuredList = products.filter(p => p.isFeatured);
+            container.innerHTML = featuredList.map(p => createProductCardHTML(p)).join('');
+        }
+
+        // Render Boutique Products with Category Filter
+        function renderBoutiqueProducts() {
+            const container = document.getElementById('boutique-products-grid');
+            let filteredList = products;
+            if (activeBoutiqueFilter !== 'Tous') {
+                filteredList = products.filter(p => p.category === activeBoutiqueFilter);
+            }
+            container.innerHTML = filteredList.map(p => createProductCardHTML(p)).join('');
+        }
+
+        // Filter Action for Boutique
+        function filterBoutiqueCategory(category) {
+            activeBoutiqueFilter = category;
+            
+            // Update filter buttons styling
+            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                btn.className = "cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-white border border-gray-200 text-gray-700 hover:bg-gray-50";
+            });
+            const activeBtn = document.getElementById(`cat-btn-${category}`);
+            if (activeBtn) {
+                activeBtn.className = "cat-filter-btn px-5 py-2 rounded-full text-xs font-bold transition bg-technova text-white shadow-sm";
+            }
+
+            renderBoutiqueProducts();
+            navigateTo('boutique');
+        }
+
+        // Cart Drawer Operations
+        function toggleCartDrawer(open) {
+            const drawer = document.getElementById('cart-drawer');
+            const overlay = document.getElementById('cart-drawer-overlay');
+            if (open) {
+                overlay.classList.remove('hidden');
+                drawer.classList.remove('translate-x-full');
+            } else {
+                overlay.classList.add('hidden');
+                drawer.classList.add('translate-x-full');
+            }
+        }
+
+        function addToCart(productId) {
+            const item = products.find(p => p.id === productId);
+            if (!item) return;
+
+            const existing = cart.find(c => c.id === productId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ ...item, quantity: 1 });
+            }
+
+            updateCartUI();
+            showToast(`${item.name} ajouté au panier !`);
+            toggleCartDrawer(true);
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(c => c.id !== productId);
+            updateCartUI();
+        }
+
+        function changeCartQuantity(productId, delta) {
+            const item = cart.find(c => c.id === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCartUI();
+                }
+            }
+        }
+
+        function updateCartUI() {
+            const totalCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+            // Update Head Badge
+            document.getElementById('header-cart-badge').textContent = totalCount;
+            document.getElementById('cart-drawer-count').textContent = totalCount;
+
+            // Render Cart Container Items
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 space-y-3">
+                        <i class="fa-solid fa-bag-shopping text-4xl text-gray-300"></i>
+                        <p class="text-gray-500 text-sm font-medium">Votre panier est vide</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = cart.map(item => `
+                    <div class="flex items-center space-x-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                        <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-900 text-sm">${item.name}</h4>
+                            <span class="text-xs text-technova font-bold">${item.price.toFixed(2).replace('.', ',')} DA</span>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <button onclick="changeCartQuantity('${item.id}', -1)" class="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center text-xs font-bold">-</button>
+                                <span class="text-xs font-bold text-gray-800">${item.quantity}</span>
+                                <button onclick="changeCartQuantity('${item.id}', 1)" class="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeFromCart('${item.id}')" class="text-gray-400 hover:text-red-500 p-2">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('cart-subtotal').textContent = `${subtotal.toFixed(2).replace('.', ',')} DA`;
+            document.getElementById('cart-total').textContent = `${subtotal.toFixed(2).replace('.', ',')} DA`;
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                showToast("Votre panier est vide !");
+                return;
+            }
+            if (!customer) {
+                pendingCheckout = true;
+                openAuthModal('register', true);
+                return;
+            }
+            const f = document.getElementById('checkout-form');
+            f.name.value = customer.name || '';
+            f.phone.value = customer.phone || '';
+            f.address.value = customer.address || '';
+            f.city.value = customer.city || '';
+            const m = document.getElementById('checkout-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeCheckoutModal() {
+            const m = document.getElementById('checkout-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        async function submitOrder(event) {
+            event.preventDefault();
+            const form = event.target;
+            const btn = document.getElementById('checkout-submit');
+            const fd = new FormData(form);
+            btn.disabled = true;
+            try {
+                const data = await apiFetch('api/orders.php', {
+                    customer: Object.fromEntries(fd.entries()),
+                    items: cart.map(i => ({ id: i.id, quantity: i.quantity }))
+                });
+                cart = [];
+                updateCartUI();
+                form.reset();
+                closeCheckoutModal();
+                toggleCartDrawer(false);
+                showToast(data.message);
+                loadSession();
+            } catch (e) {
+                if (e.code === 'auth_required') {
+                    customer = null;
+                    renderAccountBtn();
+                    closeCheckoutModal();
+                    pendingCheckout = true;
+                    openAuthModal('login', true);
+                }
+                showToast(e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ---------- Comptes clients ----------
+        const ORDER_STATUS = {
+            pending: ['En attente', 'bg-amber-100 text-amber-800'],
+            confirmed: ['Confirmée', 'bg-blue-100 text-blue-800'],
+            shipped: ['Expédiée', 'bg-indigo-100 text-indigo-800'],
+            delivered: ['Livrée', 'bg-emerald-100 text-emerald-800'],
+            cancelled: ['Annulée', 'bg-red-100 text-red-800']
+        };
+
+        function esc(v) {
+            const d = document.createElement('div');
+            d.textContent = v == null ? '' : String(v);
+            return d.innerHTML;
+        }
+
+        function setCustomer(c, orders) {
+            customer = c || null;
+            customerOrders = orders || [];
+            renderAccountBtn();
+            if (customer && document.getElementById('page-compte').classList.contains('active')) renderDashboard();
+        }
+
+        function renderAccountBtn() {
+            const dot = document.getElementById('account-dot');
+            const unread = customer ? (customer.unread || 0) : 0;
+            dot.classList.toggle('hidden', !customer);
+            dot.classList.toggle('bg-emerald-500', unread === 0);
+            dot.classList.toggle('bg-red-500', unread > 0);
+            document.getElementById('account-btn').title = customer
+                ? 'Mon espace (' + customer.name + ')' + (unread ? ' - ' + unread + ' notification(s) non lue(s)' : '')
+                : 'Se connecter';
+        }
+
+        async function loadSession() {
+            try {
+                const d = await apiFetch('api/account.php');
+                setCustomer(d.customer, d.orders);
+            } catch (e) { /* visiteur non connecté */ }
+        }
+
+        function openAccount() {
+            if (customer) location.href = 'compte/'; else openAuthModal('login', false);
+        }
+
+        function openAuthModal(tab, fromCheckout) {
+            document.getElementById('auth-hint').classList.toggle('hidden', !fromCheckout);
+            switchAuthTab(tab || 'login');
+            const m = document.getElementById('auth-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeAuthModal() {
+            const m = document.getElementById('auth-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            pendingCheckout = false;
+        }
+
+        function switchAuthTab(tab) {
+            ['login', 'register', 'forgot'].forEach(t => {
+                document.getElementById(t + '-form').classList.toggle('hidden', t !== tab);
+            });
+            const titles = { login: 'Connexion', register: 'Créer un compte', forgot: 'Mot de passe oublié' };
+            document.getElementById('auth-title').textContent = titles[tab];
+            document.getElementById('auth-tabs').classList.toggle('hidden', tab === 'forgot');
+            const on = 'flex-1 py-2 rounded-full transition bg-technova text-white';
+            const off = 'flex-1 py-2 rounded-full transition text-gray-600';
+            document.getElementById('tab-login').className = tab === 'login' ? on : off;
+            document.getElementById('tab-register').className = tab === 'register' ? on : off;
+        }
+
+        async function authRequest(event, payload) {
+            event.preventDefault();
+            const btn = event.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const d = await apiFetch('api/account.php', payload);
+                return d;
+            } catch (e) {
+                showToast(e.message);
+                return null;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function afterAuth(d, form) {
+            setCustomer(d.customer, d.orders);
+            form.reset();
+            const resume = pendingCheckout;
+            closeAuthModal();
+            showToast(d.message);
+            if (resume) checkout(); else location.href = 'compte/';
+        }
+
+        async function submitLogin(event) {
+            const f = event.target;
+            const d = await authRequest(event, { action: 'login', email: f.email.value, password: f.password.value });
+            if (d) afterAuth(d, f);
+        }
+
+        async function submitRegister(event) {
+            const f = event.target;
+            const d = await authRequest(event, { action: 'register', name: f.name.value, email: f.email.value, phone: f.phone.value, password: f.password.value });
+            if (d) afterAuth(d, f);
+        }
+
+        async function submitForgot(event) {
+            const f = event.target;
+            const d = await authRequest(event, { action: 'forgot', email: f.email.value });
+            if (d) {
+                f.reset();
+                showToast(d.message);
+                switchAuthTab('login');
+            }
+        }
+
+        // ---------- Tableau de bord client ----------
+        const money = n => Number(n).toFixed(2).replace('.', ',') + ' DA';
+        const fmtDate = v => new Date(String(v).replace(' ', 'T') + 'Z').toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const STEPS = ['pending', 'confirmed', 'shipped', 'delivered'];
+
+        function showDashTab(tab) {
+            ['overview', 'orders', 'profile', 'security'].forEach(t => {
+                document.getElementById('dash-' + t).classList.toggle('hidden', t !== tab);
+                document.getElementById('dash-tab-' + t).className = 'dash-tab w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition ' +
+                    (t === tab ? 'bg-technova text-white shadow-sm' : 'text-gray-700 hover:bg-gray-50');
+            });
+        }
+
+        function statusBadge(st) {
+            const s = ORDER_STATUS[st] || [st, 'bg-gray-100 text-gray-700'];
+            return `<span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full ${s[1]}">${esc(s[0])}</span>`;
+        }
+
+        function progressBar(status) {
+            if (status === 'cancelled') return '';
+            const idx = STEPS.indexOf(status);
+            const labels = ['En attente', 'Confirmée', 'Expédiée', 'Livrée'];
+            return `<div class="flex items-center justify-between pt-2">` + STEPS.map((s, i) => `
+                <div class="flex-1 flex flex-col items-center text-center ${i <= idx ? 'text-technova' : 'text-gray-300'}">
+                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs ${i <= idx ? 'bg-technova text-white' : 'bg-gray-100'}"><i class="fa-solid ${i <= idx ? 'fa-check' : 'fa-circle'} text-[10px]"></i></div>
+                    <span class="text-[10px] font-bold mt-1">${labels[i]}</span>
+                </div>`).join('') + `</div>`;
+        }
+
+        function orderCard(o, open) {
+            const lines = o.items.map(i => `<div class="flex justify-between text-sm text-gray-600"><span>${esc(i.name)} <span class="text-gray-400">× ${i.quantity}</span></span><span class="font-semibold">${money(i.unitPrice * i.quantity)}</span></div>`).join('');
+            return `<details ${open ? 'open' : ''} class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 group">
+                <summary class="flex items-center justify-between cursor-pointer list-none">
+                    <div><div class="font-bold text-gray-900">${esc(o.reference)}</div><div class="text-xs text-gray-500">${esc(fmtDate(o.createdAt))}</div></div>
+                    <div class="text-right"><div class="font-extrabold text-technova">${money(o.total)}</div>${statusBadge(o.status)}</div>
+                </summary>
+                <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">${lines}
+                    <div class="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100"><span>Total</span><span>${money(o.total)}</span></div>
+                    <p class="text-xs text-gray-500 pt-1"><i class="fa-solid fa-location-dot mr-1"></i>${esc(o.address)}</p>
+                    ${progressBar(o.status)}
+                </div>
+            </details>`;
+        }
+
+        function renderDashboard() {
+            if (!customer) return;
+            document.getElementById('dash-greeting').textContent = 'Bonjour, ' + customer.name.split(' ')[0];
+            document.getElementById('dash-email').textContent = customer.email;
+
+            const valid = customerOrders.filter(o => o.status !== 'cancelled');
+            const active = customerOrders.filter(o => ['pending', 'confirmed', 'shipped'].includes(o.status)).length;
+            document.getElementById('stat-orders').textContent = customerOrders.length;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-spent').textContent = money(valid.reduce((s, o) => s + o.total, 0));
+
+            document.getElementById('dash-last-order').innerHTML = customerOrders.length
+                ? orderCard(customerOrders[0], true)
+                : `<div class="text-center py-6 space-y-3"><i class="fa-solid fa-bag-shopping text-3xl text-gray-300"></i><p class="text-sm text-gray-500">Vous n'avez pas encore passé de commande.</p>
+                   <button onclick="navigateTo('boutique')" class="bg-technova hover:bg-technova-dark text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Découvrir la boutique</button></div>`;
+            document.getElementById('dash-orders-list').innerHTML = customerOrders.length
+                ? customerOrders.map(o => orderCard(o, false)).join('')
+                : '<p class="text-sm text-gray-500">Aucune commande pour le moment.</p>';
+
+            const addr = [customer.address, customer.city].filter(Boolean).join(', ');
+            document.getElementById('dash-address').innerHTML =
+                `<p class="font-semibold text-gray-900">${esc(customer.name)}</p>` +
+                `<p>${addr ? esc(addr) : '<span class="text-gray-400">Adresse non renseignée</span>'}</p>` +
+                `<p>${customer.phone ? esc(customer.phone) : '<span class="text-gray-400">Téléphone non renseigné</span>'}</p>`;
+
+            const f = document.getElementById('profile-form');
+            f.name.value = customer.name || '';
+            f.email.value = customer.email || '';
+            f.phone.value = customer.phone || '';
+            f.city.value = customer.city || '';
+            f.address.value = customer.address || '';
+            if (!document.querySelector('.dash-tab.bg-technova')) showDashTab('overview');
+        }
+
+        async function saveProfile(event) {
+            event.preventDefault();
+            const f = event.target;
+            const btn = f.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const d = await apiFetch('api/account.php', { action: 'update', name: f.name.value, phone: f.phone.value, city: f.city.value, address: f.address.value });
+                setCustomer(d.customer, customerOrders);
+                showToast(d.message);
+            } catch (e) {
+                showToast(e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function savePassword(event) {
+            event.preventDefault();
+            const f = event.target;
+            const btn = f.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const d = await apiFetch('api/account.php', {
+                    action: 'update', name: customer.name, phone: customer.phone, city: customer.city, address: customer.address,
+                    currentPassword: f.currentPassword.value, newPassword: f.newPassword.value
+                });
+                f.reset();
+                showToast('Mot de passe mis à jour.');
+            } catch (e) {
+                showToast(e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function doLogout() {
+            try { await apiFetch('api/account.php', { action: 'logout' }); } catch (e) {}
+            setCustomer(null, []);
+            if (document.getElementById('page-compte').classList.contains('active')) navigateTo('home');
+            showToast('Vous êtes déconnecté(e).');
+        }
+
+        // Contact Form Handler
+        async function handleContactSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const data = await apiFetch('api/contact.php', Object.fromEntries(new FormData(form).entries()));
+                form.reset();
+                showToast(data.message);
+            } catch (e) {
+                showToast(e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Newsletter Handler
+        async function handleNewsletterSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            try {
+                const data = await apiFetch('api/newsletter.php', { email: form.email.value });
+                form.reset();
+                showToast(data.message);
+            } catch (e) {
+                showToast(e.message);
+            }
+        }
+
+        // Global Search Bar Handler
+        function handleGlobalSearch(event) {
+            if (event.key === 'Enter') {
+                const query = event.target.value.toLowerCase();
+                if (!query) return;
+                navigateTo('boutique');
+                const container = document.getElementById('boutique-products-grid');
+                const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+                if (filtered.length > 0) {
+                    container.innerHTML = filtered.map(p => createProductCardHTML(p)).join('');
+                    showToast(`${filtered.length} produit(s) trouvé(s)`);
+                } else {
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500">Aucun produit ne correspond à votre recherche.</div>`;
+                }
+            }
+        }
+
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        // Custom Toast Notification System
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
